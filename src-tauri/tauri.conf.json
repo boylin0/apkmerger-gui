@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "decorations": false,
         "title": "apkmerger-gui",
         "width": 800,
         "height": 600
