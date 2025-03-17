@@ -7,7 +7,10 @@ fn greet(name: &str) -> String {
         .expect("failed to execute process");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    format!("Hello, {}! You've been greeted from Rust! Command output: {}", name, stdout)
+    format!(
+        "Hello, {}! You've been greeted from Rust! Command output: {}",
+        name, stdout
+    )
 }
 
 #[tauri::command]
@@ -22,12 +25,17 @@ fn minimize(window: tauri::Window) {
 
 #[tauri::command]
 fn maximize(window: tauri::Window) {
-    window.maximize().unwrap();
+    if !window.is_maximized().unwrap() {
+        window.maximize().unwrap();
+    } else {
+        window.unmaximize().unwrap();
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet, close, minimize, maximize])
         .run(tauri::generate_context!())
