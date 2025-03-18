@@ -4,8 +4,10 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 import "@fontsource/roboto";
 import "./App.scss";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, message } from "@tauri-apps/plugin-dialog";
 import type { event } from "@tauri-apps/api";
+
+const ALLOWED_FILE_EXTENSIONS = ["xapk", "apkm", "apks"];
 
 function WindowWrapper({ children }: { children: React.ReactNode }) {
 
@@ -53,9 +55,14 @@ function DragDropFileRegion() {
   const [result, setResult] = useState<string | null>(null);
 
   const handleInvoke = async (path: string | null) => {
-    console.log("Invoking run_apkeditor_merge");
     if (!path) {
       console.error("No file selected");
+      return;
+    }
+    // check ALLOWED_FILE_EXTENSIONS
+    const ext = path.split('.').pop();
+    if (!ext || !ALLOWED_FILE_EXTENSIONS.includes(ext)) {
+      message("Please select a valid APK file", { title: "Invalid file", kind: "error" });
       return;
     }
     setResult(null);
@@ -63,7 +70,7 @@ function DragDropFileRegion() {
     try {
       setResult(await invoke("run_apkeditor_merge", { pathIn: path }));
     } catch (error) {
-      setResult("Unexpected error: " + error);
+      message(`Unexpected error: ${error}`, { title: "Error", kind: "error" });
     } finally {
       setProcessing(false);
     }
@@ -77,7 +84,7 @@ function DragDropFileRegion() {
       filters: [
         {
           name: "APK Files",
-          extensions: ["xapk", "apkm", "apks"],
+          extensions: ALLOWED_FILE_EXTENSIONS,
         },
       ],
     });
@@ -96,7 +103,7 @@ function DragDropFileRegion() {
         }
         const paths = event.payload.paths;
         if (paths.length > 1 || paths.length === 0) {
-          setResult("Please select only one file");
+          message("Please select only one file", { title: "Invalid file", kind: "error" });
           return
         }
         handleInvoke(paths[0]);
