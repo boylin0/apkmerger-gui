@@ -59,6 +59,10 @@ fn run_apkeditor_merge(state: tauri::State<AppData>, path: String) {
     println!("{}", jar_path);
 }
 
+fn remove_unc_prefix(path: &str) -> String {
+    path.strip_prefix(r"\\?\").unwrap_or(path).to_string()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -67,11 +71,7 @@ pub fn run() {
                 .path()
                 .resolve("resources/apkeditor.jar", BaseDirectory::Resource)?;
             app.manage(AppData {
-                apkeditor_path: resource_path
-                    .to_string_lossy()
-                    .strip_prefix(r"\\?\")
-                    .unwrap()
-                    .to_string(),
+                apkeditor_path: remove_unc_prefix(resource_path.to_str().unwrap()),
             });
             Ok(())
         })
