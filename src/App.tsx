@@ -89,6 +89,11 @@ function DragDropFileRegion() {
 
     const setupListener = async () => {
       unlisten = await listen("tauri://drag-drop", (event: event.Event<{ paths: string[] }>) => {
+        console.log(event);
+        if (processing) {
+          setResult("Please wait for the current operation to complete");
+          return;
+        }
         const paths = event.payload.paths;
         if (paths.length > 1 || paths.length === 0) {
           setResult("Please select only one file");
@@ -101,10 +106,11 @@ function DragDropFileRegion() {
     setupListener();
 
     return () => {
-      if (unlisten) {
-        unlisten();
-      }
-    };
+      // workaround for the issue that the listener is not removed when the component is unmounted
+      setTimeout(() => {
+        unlisten?.();
+      }, 100);
+    }
   }, []);
 
   return (
