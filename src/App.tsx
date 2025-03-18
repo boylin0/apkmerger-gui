@@ -139,6 +139,17 @@ function DragDropFileRegion() {
 
 function App() {
 
+  // disable right click context menu
+  useEffect(() => {
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("contextmenu", handleContextMenu);
+    return () => {
+      window.removeEventListener("contextmenu", handleContextMenu);
+    };
+  }, []);
+
   return (
     <WindowWrapper>
       <main className="container">
