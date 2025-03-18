@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
@@ -23,7 +23,7 @@ function WindowWrapper({ children }: { children: React.ReactNode }) {
 
     titlebarControlsRef.current?.addEventListener("mouseenter", handleMouseEnter);
     titlebarControlsRef.current?.addEventListener("mouseleave", handleMouseLeave);
-    
+
     return () => {
       titlebarControlsRef.current?.removeEventListener("mouseenter", handleMouseEnter);
       titlebarControlsRef.current?.removeEventListener("mouseleave", handleMouseLeave);
@@ -47,15 +47,30 @@ function WindowWrapper({ children }: { children: React.ReactNode }) {
 
 function DragDropFileRegion() {
 
-    //setGreetMsg(await invoke("greet", { name }));
+  //setGreetMsg(await invoke("greet", { name }));
 
-  const handleInvoke = async (path: string| null) => {
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleInvoke = async (path: string | null) => {
     console.log("Invoking run_apkeditor_merge");
-    console.log(await invoke("run_apkeditor_merge", { path: path }));
+    if (!path) {
+      console.error("No file selected");
+      return;
+    }
+    setResult(null);
+    setProcessing(true);
+    try {
+      setResult(await invoke("run_apkeditor_merge", { pathIn: path }));
+    } catch (error) {
+      setResult("Unexpected error: " + error);
+    } finally {
+      setProcessing(false);
+    }
   }
 
   const handleClick = async () => {
-    console.log("Opening file dialog");
+    setResult(null);
     const selectedPath = await open({
       //directory: true,
       multiple: false,
@@ -76,7 +91,7 @@ function DragDropFileRegion() {
       unlisten = await listen("tauri://drag-drop", (event: event.Event<{ paths: string[] }>) => {
         const paths = event.payload.paths;
         if (paths.length > 1 || paths.length === 0) {
-          console.error("Only one file is supported at a time");
+          setResult("Please select only one file");
           return
         }
         handleInvoke(paths[0]);
@@ -97,8 +112,21 @@ function DragDropFileRegion() {
       className="drag-drop-file-region"
       onClick={handleClick}
     >
-      <p>Drag and drop your APK files here</p>
-      <small>(xapk, apkm, apks,... are supported)</small>
+      {
+        result ? (
+          <div className="result">
+            <h5 className="title">Result</h5>
+            <div className="text">{result}</div>
+          </div>
+        ) : processing ? (
+            <div className="infinity-loop-progressbar"></div>
+        ) : (
+          <div className="drop-area-hint">
+            <p>Drag and drop your APK files here</p>
+            <small>(xapk, apkm, apks,... are supported)</small>
+          </div>
+        )
+      }
     </div>
   );
 }

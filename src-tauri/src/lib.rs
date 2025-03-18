@@ -4,21 +4,6 @@ struct AppData {
     apkeditor_path: String,
 }
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    let output = std::process::Command::new("cmd")
-        .args(&["/C", "echo Hello from cmd"])
-        .output()
-        .expect("failed to execute process");
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    format!(
-        "Hello, {}! You've been greeted from Rust! Command output: {}",
-        name, stdout
-    )
-}
-
 #[tauri::command]
 fn close(window: tauri::Window) {
     window.close().unwrap();
@@ -38,17 +23,28 @@ fn maximize(window: tauri::Window) {
     }
 }
 
+fn check_command_exists(command: &str) -> bool {
+    std::process::Command::new("which")
+        .arg(command)
+        .output()
+        .expect("failed to execute process")
+        .status
+        .success()
+}
+
 #[tauri::command]
-fn run_apkeditor_merge(state: tauri::State<AppData>, path: String) {
+fn run_apkeditor_merge(state: tauri::State<AppData>, path_in: String) -> String {
     let jar_path = &state.apkeditor_path;
     let java_args = vec![
         "-jar".to_string(),
         jar_path.clone(),
         "merge".to_string(),
         "-i".to_string(),
-        path.clone(),
+        path_in.clone(),
     ];
-    print!("{:?}", java_args);
+    if !check_command_exists("java") {
+        return "Java not found, please make sure it is installed and in your PATH".to_string();
+    }
     let output = std::process::Command::new("java")
         .args(&java_args)
         .output()
@@ -57,6 +53,7 @@ fn run_apkeditor_merge(state: tauri::State<AppData>, path: String) {
     let stderr = String::from_utf8_lossy(&output.stderr);
     println!("{} {}", stdout, stderr);
     println!("{}", jar_path);
+    return format!("{}\n{}", stdout, stderr);
 }
 
 fn remove_unc_prefix(path: &str) -> String {
@@ -78,7 +75,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            greet,
             close,
             minimize,
             maximize,
