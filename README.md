@@ -6,6 +6,10 @@ This is a GUI application built with [Tauri](https://tauri.app/), based on [APK 
 - Intuitive GUI for easy usage  
 - Lightweight and cross-platform with Tauri  
 - Integrates APK Editor’s APK Merger for automated processing  
+- Elegant macOS-style UI for a sleek and intuitive experience  
+
+## Screenshots
+![Screenshot](screenshot.png)
 
 ## Installation & Usage  
 
